@@ -1,11 +1,12 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='propagate',
     version='0.1.0',
     author='Nir Atias',
-    packages=['propagate'], 
-    url='http://pypi.python.org/pypi/propagate',
+    author_email='rinatias@gmail.com',
+    packages=find_packages(),
+    url='https://github.com/atiasnir/propagation',
     license='LICENSE.txt', 
     description='Propagation belief graph algorithm', 
     long_description=open('README.txt').read(), 
@@ -14,5 +15,7 @@ setup(
         "scipy >= 0.14.0", 
         "pandas >= 0.13.0",
     ],
+    package_data={'test.data' : ['*.txt']},
+    keywords="belief propagation diffusion graph algorithm",
 )
 
