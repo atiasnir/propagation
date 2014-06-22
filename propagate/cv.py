@@ -14,8 +14,8 @@ def parse_commandline(args):
     return parser.parse_args(args)
 
 def leave_one_out(network, prior, **kwargs):
-    prior_ind = np.nonzero(prior)
-    result = np.zeros(shape=(len(prior_ind),len(prior_ind)))
+    prior_ind = np.nonzero(prior)[0]
+    result = np.zeros(shape=(len(prior_ind),len(prior)))
 
     prior_cpy = np.copy(prior)
 
@@ -24,29 +24,30 @@ def leave_one_out(network, prior, **kwargs):
         if i > 0:
             prior_cpy[prior_ind[i-1]] = prior[prior_ind[i-1]]
 
-        result[i,:] = network.smooth(prior_cpy, **kwargs)
+        result[i,:] = network.smooth(prior_cpy, **kwargs).flat
 
     return result
 
 def kfold(network, prior, folds, seed=None, **kwargs):
     # shuffle the non zero indices so that each cv iteration 
     # is contiguous in prior_ind
-    np.seed(seed)
-    prior_ind = np.shuffle(np.nonzero(prior))
+    np.random.seed(seed)
+    prior_ind = np.copy(np.nonzero(prior)[0])
+    np.random.shuffle(prior_ind)
     
     if folds > len(prior_ind):
         raise ValueError("Folds should be less than the number of elements in the prior")
     
-    result = np.zeros(shape=(folds, len(prior_ind)))
-    cv_chunk = prior_ind // folds
+    result = np.zeros(shape=(folds, len(prior)))
+    cv_chunk = len(prior_ind) // folds
 
     for i in range(folds):
         prior_cpy = np.copy(prior)
         if i < folds-1:
-            prior_cpy[prior_ind[i*cv_chunk:(i+1)*cv_chunk]] = 0 # remove associations
+            prior_cpy[prior_ind[(i*cv_chunk):((i+1)*cv_chunk)]] = 0 # remove associations
         else:
-            prior_cpy[prior_ind[i*cv_chunk:]] = 0 # remove associations
-        result[i,:] = network.smooth(prior_cpy, **kwargs)
+            prior_cpy[prior_ind[(i*cv_chunk):]] = 0 # remove associations
+        result[i,:] = network.smooth(prior_cpy, **kwargs).flat
 
     return result
 
@@ -80,13 +81,13 @@ if __name__ == '__main__':
         network = network.normalize()
 
         if opts.loo:
-            result = leave_one_out(network, prior, alpha=opts.alpha, eps=opts.eps, max_iter=opts.iterations)
+            result = leave_one_out(network, prior, alpha=opts.alpha, eps=opts.epsilon, max_iter=opts.iterations)
         else:
-            result = kfold(network, prior, opts.folds, opts.seed, alpha=opts.alpha, eps=opts.eps, max_iter=opts.iterations)
+            result = kfold(network, prior, opts.folds, opts.seed, alpha=opts.alpha, eps=opts.epsilon, max_iter=opts.iterations)
 
         # handle the results array 
         tpr, fpr, auc_score = roc(result, prior)
 
         print tpr
         print fpr
-        print auc
+        print auc_score
