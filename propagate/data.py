@@ -13,32 +13,46 @@ def _build_index(dataset, *columns):
     mapset.drop_duplicates(inplace=True)
     return mapset
 
+def read_ppi_from_dataframe(dataset, from_column='from', to_column='to', confidence_column='confidence'):
+    all_genes = pd.concat((dataset[from_column], dataset[to_column])).unique()
+    n = len(all_genes)
+
+    names = pd.DataFrame(data={'name': all_genes, 'index': range(n)})
+    
+    d1 = dataset.merge(names, left_on=from_column, right_on='name')
+    d1.rename(columns={'index': 'from_index'}, inplace=True)
+    d1.drop('name', axis=1, inplace=True)
+    d2 = d1.merge(names, left_on=to_column, right_on='name')
+    d2.rename(columns={'index': 'to_index'}, inplace=True)
+    d2.drop('name', axis=1, inplace=True)
+
+    d2[confidence_column].fillna(1, inplace=True)
+    d = sps.coo_matrix((d2[confidence_column], (d2['from_index'], d2['to_index'])), shape=(n,n))
+    sym = (d + d.T)
+    
+    names = _build_index(d2, (from_column, 'from_index'), (to_column, 'to_index'))
+    names.sort(columns=('index'), inplace=True)
+
+    return Network(sym, pd.Series(index=names['name'].values, data=names['index'].values))
+
 def read_ppi(filename):
     """ reads a ppi network from file  """
         
     column_names = ('from', 'to', 'confidence', 'flag')
     dataset = pd.read_table(filename, header=None, names=column_names)
 
-    all_genes = pd.concat((dataset['from'], dataset['to'])).unique()
-    n = len(all_genes)
+    return read_ppi_from_dataframe(dataset)
 
-    names = pd.DataFrame(data={'name': all_genes, 'index': range(n)})
-    
-    d1 = dataset.merge(names, left_on='from', right_on='name')
-    d1.rename(columns={'index': 'from_index'}, inplace=True)
-    d1.drop('name', axis=1, inplace=True)
-    d2 = d1.merge(names, left_on='to', right_on='name')
-    d2.rename(columns={'index': 'to_index'}, inplace=True)
-    d2.drop('name', axis=1, inplace=True)
+def create_prior(index, names, scores):
+    prior = np.zeros(shape=(index.shape[0], 1))
+    mapped_names = index[names]
+    na_mask = (~np.isnan(mapped_names)).values
+    if hasattr(scores, '__getitem__'):
+        prior[mapped_names[na_mask]].flat = scores[na_mask]
+    else:
+        prior[mapped_names[na_mask]] = scores
 
-    d2.confidence.fillna(1, inplace=True)
-    d = sps.coo_matrix((d2['confidence'], (d2['from_index'], d2['to_index'])), shape=(n,n))
-    sym = (d + d.T)
-    
-    names = _build_index(d2, ('from', 'from_index'), ('to', 'to_index'))
-    names.sort(columns=('index'), inplace=True)
-
-    return Network(sym, pd.Series(index=names['name'].values, data=names['index'].values))
+    return prior
 
 def read_prior(filename, index):
     prior = np.zeros((len(index),1))
