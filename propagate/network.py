@@ -22,5 +22,3 @@ class Network:
                 break
 
         return f
-
-

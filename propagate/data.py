@@ -48,9 +48,9 @@ def create_prior(index, names, scores):
     mapped_names = index[names]
     na_mask = (~np.isnan(mapped_names)).values
     if hasattr(scores, '__getitem__'):
-        prior[mapped_names[na_mask]].flat = scores[na_mask]
+        prior[mapped_names[na_mask].values.astype(np.int)].flat = scores[na_mask]
     else:
-        prior[mapped_names[na_mask]] = scores
+        prior[mapped_names[na_mask].values.astype(np.int)] = scores
 
     return prior
 

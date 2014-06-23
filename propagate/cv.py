@@ -25,6 +25,7 @@ def leave_one_out(network, prior, **kwargs):
             prior_cpy[prior_ind[i-1]] = prior[prior_ind[i-1]]
 
         result[i,:] = network.smooth(prior_cpy, **kwargs).flat
+        result[i,np.where((prior_cpy>0).flat)] = None
 
     return result
 
@@ -48,11 +49,13 @@ def kfold(network, prior, folds, seed=None, **kwargs):
         else:
             prior_cpy[prior_ind[(i*cv_chunk):]] = 0 # remove associations
         result[i,:] = network.smooth(prior_cpy, **kwargs).flat
+        result[i,np.where((prior_cpy>0).flat)] = None
 
     return result
 
-def roc(result, prior):
-    scores = np.min(result, axis=0)
+def roc(result, prior, aggregate=np.nanmean):
+    np.set_printoptions(linewidth=120)
+    scores = aggregate(result, axis=0)
     fpr, tpr, _ = roc_curve(prior>0, scores) 
     return tpr, fpr, auc(fpr, tpr)
 
