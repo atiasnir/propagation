@@ -54,7 +54,6 @@ def kfold(network, prior, folds, seed=None, **kwargs):
     return result
 
 def roc(result, prior, aggregate=np.nanmean):
-    np.set_printoptions(linewidth=120)
     scores = aggregate(result, axis=0)
     fpr, tpr, _ = roc_curve(prior>0, scores) 
     return tpr, fpr, auc(fpr, tpr)
