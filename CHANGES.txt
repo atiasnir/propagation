@@ -1,1 +1,7 @@
+v0.2.1, July 3rd 2014  -- * The quality of the results can now be evaluated with a validation set (requires scikit.learn)
+
+v0.2.0, June 25th 2014 -- * The code in now split into modules and can be used as a library.
+                          * Support for creation of data structures from pandas dataframes 
+						  * Support for cross validation for the prediction of a given prior
+
 v0.1.0, June 16th 2014 -- Initial release
