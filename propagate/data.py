@@ -11,7 +11,6 @@ def _build_index(dataset, *columns):
         mapset = mapset.append(subset, ignore_index=True)
     
     mapset.drop_duplicates(inplace=True)
-    #mapset['name'] = mapset.name.astype(str)
     return mapset
 
 def read_ppi_from_dataframe(dataset, from_column='from', to_column='to', confidence_column='confidence'):
@@ -50,23 +49,38 @@ def read_ppi(filename):
     return read_ppi_from_dataframe(dataset)
 
 def create_prior(index, names, scores):
-    prior = np.zeros(shape=(index.shape[0], 1))
-    mapped_names = index[names]
-    na_mask = (~np.isnan(mapped_names)).values
-    if hasattr(scores, '__getitem__'):
-        prior[mapped_names[na_mask].values.astype(np.int)] = scores[na_mask].reshape((np.count_nonzero(na_mask),1))
+    n = 1
+    if isinstance(names, list) or isinstance(names, tuple):
+        n = len(names)
+        mapped_names = [index[names[x]] for x in range(n)]
     else:
-        prior[mapped_names[na_mask].values.astype(np.int)] = scores
+        mapped_names = [index[names]]
+
+    prior = np.zeros(shape=(index.shape[0], n))
+    #mapped_names = [index[names[x]] for x in range(n)]
+    #na_mask = (~np.isnan(mapped_names)).values
+    #if hasattr(scores, '__getitem__'):
+    #    prior[mapped_names[na_mask].values.astype(np.int)] = scores[na_mask].reshape((np.count_nonzero(na_mask),1))
+    #else:
+
+    for i in range(n):
+        prior[mapped_names[i].values.astype(np.int),i] = scores
+
+    return np.vstack(prior)
+
+def read_prior(filenames, index):
+    if not isinstance(filenames, list) and not isinstance(filenames, tuple):
+        filenames = [filenames]
+
+    prior = np.zeros((len(index),len(filenames)))
+    for i, filename in enumerate(filenames):
+        with open(filename, 'r') as f:
+            for line in f:
+                arr = line.strip().split()
+                if len(arr)>1:
+                    name, score = arr
+                    prior[index[name],i] = float(score)
+                else:
+                    prior[index[arr[0]],i] = 1.0
 
     return prior
-
-def read_prior(filename, index):
-    prior = np.zeros((len(index),1))
-    with open(filename, 'r') as f:
-        for line in f:
-            name, score = line.strip().split()
-            prior[index[name]] = float(score)
-
-    return prior
-
-

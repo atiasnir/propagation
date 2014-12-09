@@ -5,11 +5,12 @@ def create_parser():
 
     # positional
     parser.add_argument('network', type=str, help="network filename (tsv format: from/to/weight)")
-    parser.add_argument('prior', type=str, default=None, help="prior filename (tsv format: from/value)")
+    parser.add_argument('prior', type=str, default=None, help="prior filename(s) (each in tsv format: from/value)", nargs='+')
     # named
     parser.add_argument('-a,--alpha', dest="alpha", type=float, default=0.6, help="relative weight for the network")
     parser.add_argument('-i,--iterations', dest="iterations", type=int, default=1000, help="maximum number of iterations to execute")
     parser.add_argument('-e,--epsilon', dest="epsilon", type=float, default=1e-5, help="convergence threshold")
+    parser.add_argument('-c,--report-clusters', dest="clusters", action='store_true', default=False, help="report high scoring clusters of nodes")
     parser.add_argument('-v,--verbose', dest="verbose", action='store_true', default=False, help="verbose output")
 
     return parser
@@ -26,7 +27,7 @@ def is_valid_args(opts):
         print "Invalid network filename"
         failed = True
 
-    if opts.prior is not None and not os.path.exists(opts.prior):
+    if opts.prior is not None and not all(os.path.exists(x) for x in opts.prior):
         print "Invalid prior filename"
         failed = True
 
@@ -40,4 +41,11 @@ def is_valid_args(opts):
 
     return not failed
 
+if __name__ == '__main__':
+    parser = create_parser()
+    opts = parser.parse_args()
+    succeeded = is_valid_args(opts)
 
+    print
+    print "(V) Valid " if succeeded else "(X) Invalid", "Command line"
+    print opts

@@ -30,9 +30,9 @@ if __name__ == '__main__':
         network = data.read_ppi(opts.network)
         if opts.prior is not None:
             prior = data.read_prior(opts.prior, network.names)
-            if np.any(prior > 1.0):
-                sys.stderr.write("Scaling prior, values outside [0,1]\n")
-                prior /= np.max(prior)
+            if np.any(np.abs(prior) > 1.0):
+                sys.stderr.write("Scaling prior, values outside [-1,1]\n")
+                prior /= np.max(np.abs(prior), axis=0)
         else:
             prior = np.ones((network.graph.shape[0],1))
 
@@ -49,6 +49,15 @@ if __name__ == '__main__':
             print "fpr: ", fpr
             print "tpr: ", tpr
             print "auc: ", auc
+        elif opts.clusters:
+            import analysis
+            clusters = analysis.find_connected_ilp(network, result)
+
+            for c in clusters:
+                print ','.join(str(x) for x in c)
         else:
-            for item in sorted(zip(network.names.index, result.flat), key=lambda x: x[1]):
-                print "\t".join(map(str, item))
+            o = np.argsort(result[:,0])
+            result = result[o,:]
+            names = network.names.index[o]
+            for n, r in zip(names, result):
+                print "\t".join((n, np.str.join("\t", r.astype(str))))

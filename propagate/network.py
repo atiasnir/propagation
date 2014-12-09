@@ -7,6 +7,12 @@ class Network:
         self.graph = graph
         self.names = names
 
+    def count_edges(self):
+        return (np.count_nonzero(self.graph.diagonal()) + self.graph.nnz)/2
+
+    def count_nodes(self):
+        return self.graph.shape[0]
+
     def normalize(self):
         data = 1.0 / np.sqrt(self.graph.sum(1))
         d = sps.dia_matrix( (data.T,[0]), (len(data),len(data)) )
